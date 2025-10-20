@@ -52,19 +52,31 @@ nix-pacman = {
 5. Logs everything to `~/.cache/nix-pacman/last.log`
 6. Shows summary with success/error/skipped counts
 
+## How Package Removal Works
+
+nix-pacman automatically removes packages that are no longer in your configuration:
+
+1. Tracks all packages it manages in `~/.cache/nix-pacman/managed_packages`
+2. On each run, compares current package lists with previously managed packages
+3. Removes any packages that were previously managed but are no longer declared
+4. Uses `pacman -Rns` to remove packages and their unused dependencies
+
 ## Notes
 
-- `safeMode = true` by default - packages won't be installed, only shown
-- Set `safeMode = false` to actually install packages
+- `safeMode = true` by default - packages won't be installed/removed, only shown
+- Set `safeMode = false` to actually install/remove packages
 - Requires `sudo` access for pacman operations
 - AUR helper (yay/paru) must be installed separately if using AUR packages
+- Package removal respects safe mode - set `safeMode = true` to preview removals
 
 ## Features
 
 - **Safe Mode** - Dry-run to preview changes without installing
+- **Package Management** - Automatically removes packages no longer in your lists
 - **AUR Helper Validation** - Checks if yay/paru is installed before use
 - **Error Tracking** - Reports success/error/skipped package counts
 - **Smart Search** - Uses `pacman -Si` for exact package matching
 - **Lock Handling** - Waits for pacman database lock (up to 30s)
 - **System Updates** - Optional full system update before installing packages
+- **State Tracking** - Keeps track of managed packages in `~/.cache/nix-pacman/managed_packages`
 - **Logging** - All operations logged to `~/.cache/nix-pacman/last.log`

@@ -109,6 +109,60 @@
       SUCCESS=0
       SKIPPED=0
       
+      # Get currently installed packages that we manage
+      get_managed_packages() {
+        local managed_file="$LOGDIR/managed_packages"
+        if [ -f "$managed_file" ]; then
+          cat "$managed_file"
+        fi
+      }
+      
+      # Save list of packages we manage
+      save_managed_packages() {
+        local managed_file="$LOGDIR/managed_packages"
+        printf "%s\n" "''${PACKAGES[@]}" "''${AUR_PACKAGES[@]}" > "$managed_file" 2>/dev/null || true
+      }
+      
+      # Remove packages that are no longer in our lists
+      remove_orphaned_packages() {
+        local managed_file="$LOGDIR/managed_packages"
+        if [ ! -f "$managed_file" ]; then
+          return 0
+        fi
+        
+        echo "=== Checking for packages to remove ==="
+        local current_packages=($(cat "$managed_file" 2>/dev/null || true))
+        local all_desired=("''${PACKAGES[@]}" "''${AUR_PACKAGES[@]}")
+        
+        for old_pkg in "''${current_packages[@]}"; do
+          [ -z "$old_pkg" ] && continue
+          local found=false
+          for new_pkg in "''${all_desired[@]}"; do
+            if [ "$old_pkg" = "$new_pkg" ]; then
+              found=true
+              break
+            fi
+          done
+          
+          if [ "$found" = false ] && pacman -Qi "$old_pkg" >/dev/null 2>&1; then
+            echo "-- removing orphaned package: $old_pkg --"
+            if [ "$SAFE_MODE" -eq 1 ]; then
+              echo "DRY RUN (safe mode). Would remove: $old_pkg" | tee -a "$LOGDIR/last.log"
+            else
+              if sudo pacman -Rns --noconfirm "$old_pkg" 2>&1 | tee -a "$LOGDIR/last.log"; then
+                echo "Successfully removed: $old_pkg"
+              else
+                echo "Failed to remove: $old_pkg" | tee -a "$LOGDIR/last.log"
+                ((ERRORS++))
+              fi
+            fi
+          fi
+        done
+      }
+      
+      # Remove orphaned packages before installing new ones
+      remove_orphaned_packages
+      
       # Process regular packages
       echo "=== Processing repo packages ==="
       for pkg in "''${PACKAGES[@]}"; do
@@ -161,6 +215,9 @@
         fi
       fi
       
+      # Save current package list for next run
+      save_managed_packages
+      
       echo ""
       echo "=== nix-pacman Summary ==="
       echo "Mode: $([ "$SAFE_MODE" -eq 1 ] && echo "DRY RUN (safe mode)" || echo "INSTALLATION MODE")"
@@ -168,6 +225,7 @@
       echo "Errors: $ERRORS"
       echo "Skipped: $SKIPPED"
       echo "Logs: $LOGDIR/last.log"
+      echo "Managed packages: $LOGDIR/managed_packages"
       echo ""
       
       # Exit with error if there were failures
