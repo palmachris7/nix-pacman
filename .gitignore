@@ -1,0 +1,8 @@
+# nix
+result
+/flake.lock
+*.drv
+.nix-profile
+# mac
+.DS_Store
+.vscode/
