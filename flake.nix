@@ -75,8 +75,9 @@
         echo "Installing $pkg..."
         if [ "$is_aur" = "true" ]; then
           if [ -x "$AURHELPER" ]; then
-            # Set PATH to include /usr/bin for yay to find sudo
-            PATH="/usr/bin:/usr/local/bin:/bin:$PATH" yes 2>/dev/null | "$AURHELPER" -S --noconfirm --needed "$pkg" || true
+            # Run yay with explicit environment and no privilege elevation
+            # yay will call sudo internally when needed
+            (export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"; yes 2>/dev/null | "$AURHELPER" -S --noconfirm --needed "$pkg") || true
           else
             echo "ERROR: AUR helper not found"
             return 1
