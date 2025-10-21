@@ -39,6 +39,17 @@ in
       default = false;
       description = "If true, runs 'pacman -Syu' to update all system packages before installing declared packages.";
     };
+
+    interactiveMode = lib.mkOption {
+      type = lib.types.enum [ "automatic" "medium" "full" ];
+      default = "automatic";
+      description = ''
+        Interaction level for AUR packages:
+        - "automatic": All questions answered automatically
+        - "medium": Common questions auto-answered, user answers special questions (like architecture, licenses)
+        - "full": User answers all questions manually
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -76,6 +87,9 @@ in
         else
           export UPDATE_PACKAGES=0
         fi
+        
+        echo "nix-pacman: INTERACTION LEVEL = ${cfg.interactiveMode}"
+        export INTERACTION_LEVEL="${cfg.interactiveMode}"
         
         if [ -n "$PACKAGES_LIST" ] || [ -n "$AUR_PACKAGES_LIST" ]; then
           "$HOME/.local/bin/nix-pacman-apply" "$PACKAGES_LIST" "$AUR_PACKAGES_LIST"
