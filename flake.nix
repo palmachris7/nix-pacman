@@ -103,10 +103,13 @@
       done
       
       # Process AUR packages
+      echo "[DEBUG] AUR packages count: ''${#AUR_PACKAGES[@]}"
+      echo "[DEBUG] First AUR package: ''${AUR_PACKAGES[0]}"
       if [ ''${#AUR_PACKAGES[@]} -gt 0 ] && [ -n "''${AUR_PACKAGES[0]}" ]; then
         echo ""
         echo "=== Installing AUR packages ==="
         for pkg in "''${AUR_PACKAGES[@]}"; do
+          echo "[DEBUG] Processing AUR package: $pkg"
           [ -z "$pkg" ] && continue
           if install_package "$pkg" "true"; then
             ((SUCCESS++))
@@ -114,6 +117,8 @@
             ((ERRORS++))
           fi
         done
+      else
+        echo "[DEBUG] No AUR packages to process"
       fi
       
       # Summary
