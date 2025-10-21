@@ -16,7 +16,7 @@
     
     nix-pacman-script = ''
       #!/usr/bin/env bash
-      set -euo pipefail
+      set -eo pipefail
       
       # Configuration
       AURHELPER=''${AURHELPER:-yay}
@@ -98,11 +98,15 @@
       echo "=== Installing packages ==="
       for pkg in "''${PACKAGES[@]}"; do
         [ -z "$pkg" ] && continue
+        echo "[DEBUG] About to install: $pkg"
         if install_package "$pkg" "false"; then
-          ((SUCCESS++))
+          SUCCESS=$((SUCCESS + 1))
+          echo "[DEBUG] Success count: $SUCCESS"
         else
-          ((ERRORS++))
+          ERRORS=$((ERRORS + 1))
+          echo "[DEBUG] Error count: $ERRORS"
         fi
+        echo "[DEBUG] Finished processing: $pkg"
       done
       
       echo "[DEBUG] Finished processing regular packages"
