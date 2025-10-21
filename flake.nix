@@ -83,18 +83,18 @@
         echo "DEBUG: Checking package: $pkg"
         
         # Check if already installed
-        echo "DEBUG: Checking if installed with: pacman -Qi $pkg"
-        if pacman -Qi "$pkg" >/dev/null 2>&1; then
+        echo "DEBUG: Checking if installed with: /usr/bin/pacman -Qi $pkg"
+        if /usr/bin/pacman -Qi "$pkg" >/dev/null 2>&1; then
           echo "skip: $pkg (already installed)"
           return 0
         fi
         
-        echo "DEBUG: Package not installed, checking repos with: pacman -Si $pkg"
+        echo "DEBUG: Package not installed, checking repos with: /usr/bin/pacman -Si $pkg"
         # Use -Si for exact package search in repos
-        if pacman -Si "$pkg" >/dev/null 2>&1; then
+        if /usr/bin/pacman -Si "$pkg" >/dev/null 2>&1; then
           echo "DEBUG: Found in repos, installing..."
           echo "installing repo package: $pkg"
-          if sudo pacman -S --noconfirm --needed "$pkg"; then
+          if sudo /usr/bin/pacman -S --noconfirm --needed "$pkg"; then
             echo "Successfully installed: $pkg"
             return 0
           else
@@ -102,7 +102,7 @@
             return 1
           fi
         else
-          echo "DEBUG: pacman -Si failed with exit code: $?"
+          echo "DEBUG: /usr/bin/pacman -Si failed with exit code: $?"
         fi
         
         echo "DEBUG: Not in repos, trying AUR..."
@@ -118,7 +118,7 @@
             return 1
           fi
         else
-          echo "DEBUG: AUR helper not found. PATH: $PATH"
+          echo "DEBUG: AUR helper not found at $AURHELPER"
         fi
         
         echo "ERROR: $pkg not found in repos and $AURHELPER not available"
@@ -129,12 +129,12 @@
       if [ "$UPDATE_PACKAGES" -eq 1 ]; then
         echo "=== Updating system packages ==="
         if [ "$SAFE_MODE" -eq 1 ]; then
-          echo "DRY RUN (safe mode). Would run: sudo pacman -Syu --noconfirm" | tee -a "$LOGDIR/last.log"
+          echo "DRY RUN (safe mode). Would run: sudo /usr/bin/pacman -Syu --noconfirm" | tee -a "$LOGDIR/last.log"
         else
           if ! wait_for_pacman; then
             echo "ERROR: Cannot update, pacman is locked"
           else
-            sudo pacman -Syu --noconfirm 2>&1 | tee -a "$LOGDIR/last.log"
+            sudo /usr/bin/pacman -Syu --noconfirm 2>&1 | tee -a "$LOGDIR/last.log"
           fi
         fi
       fi
@@ -179,12 +179,12 @@
             fi
           done
           
-          if [ "$found" = false ] && pacman -Qi "$old_pkg" >/dev/null 2>&1; then
+          if [ "$found" = false ] && /usr/bin/pacman -Qi "$old_pkg" >/dev/null 2>&1; then
             echo "-- removing orphaned package: $old_pkg --"
             if [ "$SAFE_MODE" -eq 1 ]; then
               echo "DRY RUN (safe mode). Would remove: $old_pkg" | tee -a "$LOGDIR/last.log"
             else
-              if sudo pacman -Rns --noconfirm "$old_pkg" 2>&1 | tee -a "$LOGDIR/last.log"; then
+              if sudo /usr/bin/pacman -Rns --noconfirm "$old_pkg" 2>&1 | tee -a "$LOGDIR/last.log"; then
                 echo "Successfully removed: $old_pkg"
               else
                 echo "Failed to remove: $old_pkg" | tee -a "$LOGDIR/last.log"
