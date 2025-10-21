@@ -86,8 +86,24 @@
         for pkg in "''${packages_to_remove[@]}"; do
           echo "nix-pacman: Removing $pkg (no longer in config)"
           if [ "$SAFE_MODE" -eq 0 ]; then
-            echo "[DEBUG] Executing: $AURHELPER -Rns $pkg --noconfirm"
-            "$AURHELPER" -Rns "$pkg" --noconfirm 2>/dev/null || echo "Warning: Could not remove $pkg"
+            echo "[DEBUG] Checking if $pkg is actually installed..."
+            if $PACMAN -Qi "$pkg" >/dev/null 2>&1; then
+              echo "[DEBUG] $pkg is installed, attempting removal with pacman..."
+              echo "[DEBUG] Executing: $SUDO $PACMAN -Rns $pkg --noconfirm"
+              if $SUDO $PACMAN -Rns "$pkg" --noconfirm 2>&1; then
+                echo "[DEBUG] Successfully removed $pkg with pacman"
+              else
+                echo "[DEBUG] Pacman removal failed, trying with AUR helper..."
+                echo "[DEBUG] Executing: $AURHELPER -Rns $pkg --noconfirm"
+                if "$AURHELPER" -Rns "$pkg" --noconfirm 2>&1; then
+                  echo "[DEBUG] Successfully removed $pkg with AUR helper"
+                else
+                  echo "Warning: Could not remove $pkg with either pacman or AUR helper"
+                fi
+              fi
+            else
+              echo "[DEBUG] $pkg is not actually installed, skipping removal"
+            fi
           else
             echo "[DEBUG] SAFE MODE: Would remove $pkg"
           fi
