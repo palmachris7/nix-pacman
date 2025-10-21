@@ -22,7 +22,6 @@
       AURHELPER=''${AURHELPER:-yay}
       SAFE_MODE=''${SAFE_MODE:-1}
       UPDATE_PACKAGES=''${UPDATE_PACKAGES:-0}
-      INTERACTION_LEVEL=''${INTERACTION_LEVEL:-automatic}
       LOGDIR="''${HOME}/.cache/nix-pacman"
       mkdir -p "$LOGDIR"
       
@@ -74,28 +73,17 @@
         fi
         
         echo "Installing $pkg..."
-        local install_output
-        local install_status
-        
         if [ "$is_aur" = "true" ]; then
           if [ -x "$AURHELPER" ]; then
-            # Set PATH to include /usr/bin for yay to find sudo
-            PATH="/usr/bin:/usr/local/bin:/bin:$PATH" yes 2>/dev/null | "$AURHELPER" -S --noconfirm --needed "$pkg" || true
+            # Run yay with explicit environment and no privilege elevation
+            # yay will call sudo internally when needed
+            (export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"; yes 2>/dev/null | "$AURHELPER" -S --noconfirm --needed "$pkg") || true
           else
             echo "ERROR: AUR helper not found"
             return 1
           fi
         else
-          # Pacman packages - also respect interaction level
-          if [ "$INTERACTION_LEVEL" = "full" ]; then
-            # Full interactive: no automatic flags
-            install_output=$($SUDO $PACMAN -S --needed "$pkg" 2>&1)
-            install_status=$?
-          else
-            # Automatic/Medium: use --noconfirm to skip confirmations
-            install_output=$(yes 2>/dev/null | $SUDO $PACMAN -S --noconfirm --needed "$pkg" 2>&1)
-            install_status=$?
-          fi
+          yes 2>/dev/null | $SUDO $PACMAN -S --noconfirm --needed "$pkg" || true
         fi
         
         # Verify installation
@@ -103,14 +91,7 @@
           echo "✓ $pkg installed successfully"
           return 0
         else
-          # Check for specific errors in output
-          if echo "$install_output" | grep -q "not compatible with your architecture"; then
-            echo "✗ $pkg - incompatible architecture (skipping)"
-          elif echo "$install_output" | grep -q "not available for the.*architecture"; then
-            echo "✗ $pkg - not available for this architecture (skipping)"
-          else
-            echo "✗ $pkg failed to install"
-          fi
+          echo "✗ $pkg failed to install"
           return 1
         fi
       }
@@ -156,7 +137,6 @@
       echo ""
       echo "=== Summary ==="
       echo "Mode: $([ "$SAFE_MODE" -eq 1 ] && echo "DRY RUN" || echo "INSTALL")"
-      echo "Interaction: $INTERACTION_LEVEL"
       echo "Success: $SUCCESS"
       echo "Errors: $ERRORS"
       
