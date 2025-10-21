@@ -29,12 +29,22 @@
       
       # Validate AUR helper is installed if we have AUR packages
       validate_aur_helper() {
-        if ! command -v "$AURHELPER" >/dev/null 2>&1; then
-          echo "ERROR: AUR helper '$AURHELPER' is not installed"
-          echo "Please install it first: sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/$AURHELPER.git && cd $AURHELPER && makepkg -si"
-          return 1
+        # First try to find it in PATH
+        if command -v "$AURHELPER" >/dev/null 2>&1; then
+          return 0
         fi
-        return 0
+        
+        # If not in PATH, try common system locations
+        for path in "/usr/bin/$AURHELPER" "/usr/local/bin/$AURHELPER" "/bin/$AURHELPER"; do
+          if [ -x "$path" ]; then
+            AURHELPER="$path"
+            return 0
+          fi
+        done
+        
+        echo "ERROR: AUR helper '$AURHELPER' is not installed"
+        echo "Please install it first: sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/$AURHELPER.git && cd $AURHELPER && makepkg -si"
+        return 1
       }
       
       # Parse command line arguments
@@ -81,9 +91,9 @@
           return $?
         fi
         # fallback to AUR helper
-        if command -v "$AURHELPER" >/dev/null 2>&1; then
+        if command -v "$AURHELPER" >/dev/null 2>&1 || [ -x "$AURHELPER" ]; then
           echo "installing AUR package via $AURHELPER: $pkg"
-          $AURHELPER -S --noconfirm --needed "$pkg"
+          "$AURHELPER" -S --noconfirm --needed "$pkg"
           return $?
         fi
         echo "WARN: $pkg not found in repos and $AURHELPER not installed"
