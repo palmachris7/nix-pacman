@@ -233,11 +233,15 @@
       done
       
       # Validate AUR helper before processing AUR packages
+      echo "DEBUG: AUR_PACKAGES count: ''${#AUR_PACKAGES[@]}"
+      echo "DEBUG: AUR_PACKAGES[0]: ''${AUR_PACKAGES[0]}"
       if [ ''${#AUR_PACKAGES[@]} -gt 0 ] && [ -n "''${AUR_PACKAGES[0]}" ]; then
+        echo "DEBUG: Starting AUR helper validation"
         if ! validate_aur_helper; then
           echo "ERROR: Skipping all AUR packages due to missing AUR helper" | tee -a "$LOGDIR/last.log"
           ERRORS=$((ERRORS + ''${#AUR_PACKAGES[@]}))
         else
+          echo "DEBUG: AUR helper validated successfully"
           # Process AUR packages
           echo "=== Processing AUR packages ==="
           for pkg in "''${AUR_PACKAGES[@]}"; do
