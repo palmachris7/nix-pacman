@@ -47,6 +47,38 @@
         IFS=',' read -ra AUR_PACKAGES <<< "$2"
       fi
       
+      # File to track installed packages
+      INSTALLED_FILE="$HOME/.nix-pacman-installed"
+      
+      # Read previous installed packages
+      declare -A previous_packages
+      if [ -f "$INSTALLED_FILE" ]; then
+        while IFS= read -r pkg; do
+          [ -n "$pkg" ] && previous_packages["$pkg"]=1
+        done < "$INSTALLED_FILE"
+      fi
+      
+      # Current desired packages
+      current_packages=()
+      for pkg in "''${PACKAGES[@]}"; do
+        [ -n "$pkg" ] && current_packages+=("$pkg")
+      done
+      for pkg in "''${AUR_PACKAGES[@]}"; do
+        [ -n "$pkg" ] && current_packages+=("$pkg")
+      done
+      
+      # Uninstall packages not in current list
+      for pkg in "''${!previous_packages[@]}"; do
+        if [[ ! " ''${current_packages[*]} " =~ " $pkg " ]]; then
+          echo "nix-pacman: Removing $pkg (no longer in config)"
+          if [ "$SAFE_MODE" -eq 0 ]; then
+            "$AURHELPER" -Rns "$pkg" --noconfirm 2>/dev/null || echo "Warning: Could not remove $pkg"
+          else
+            echo "DRY RUN: Would remove $pkg"
+          fi
+        fi
+      done
+      
       # Counters
       ERRORS=0
       SUCCESS=0
@@ -132,6 +164,9 @@
       else
         echo "[DEBUG] No AUR packages to process"
       fi
+      
+      # Save current installed packages list
+      printf '%s\n' "''${current_packages[@]}" > "$INSTALLED_FILE"
       
       # Summary
       echo ""
