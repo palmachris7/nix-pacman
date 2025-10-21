@@ -82,14 +82,17 @@
         local pkg="$1"
         echo "DEBUG: Checking package: $pkg"
         
+        # Check if already installed
+        echo "DEBUG: Checking if installed with: pacman -Qi $pkg"
         if pacman -Qi "$pkg" >/dev/null 2>&1; then
           echo "skip: $pkg (already installed)"
           return 0
         fi
         
-        echo "DEBUG: Package not installed, checking repos..."
+        echo "DEBUG: Package not installed, checking repos with: pacman -Si $pkg"
         # Use -Si for exact package search in repos
         if pacman -Si "$pkg" >/dev/null 2>&1; then
+          echo "DEBUG: Found in repos, installing..."
           echo "installing repo package: $pkg"
           if sudo pacman -S --noconfirm --needed "$pkg"; then
             echo "Successfully installed: $pkg"
@@ -98,11 +101,14 @@
             echo "Failed to install: $pkg"
             return 1
           fi
+        else
+          echo "DEBUG: pacman -Si failed with exit code: $?"
         fi
         
         echo "DEBUG: Not in repos, trying AUR..."
         # Try AUR helper
         if command -v "$AURHELPER" >/dev/null 2>&1 || [ -x "$AURHELPER" ]; then
+          echo "DEBUG: AUR helper available at: $AURHELPER"
           echo "installing AUR package via $AURHELPER: $pkg"
           if "$AURHELPER" -S --noconfirm --needed "$pkg"; then
             echo "Successfully installed from AUR: $pkg"
@@ -111,6 +117,8 @@
             echo "Failed to install from AUR: $pkg"
             return 1
           fi
+        else
+          echo "DEBUG: AUR helper not found. PATH: $PATH"
         fi
         
         echo "ERROR: $pkg not found in repos and $AURHELPER not available"
