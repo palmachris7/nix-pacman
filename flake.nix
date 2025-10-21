@@ -92,8 +92,8 @@
         echo "DEBUG: Package not installed, trying direct install"
         # Skip -Si check and try direct install with pacman -S
         # This is more reliable as -Si may fail in restricted environments
-        echo "DEBUG: Attempting: sudo /usr/bin/pacman -S --noconfirm --needed $pkg"
-        if sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
+        echo "DEBUG: Attempting: /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed $pkg"
+        if /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
           echo "DEBUG: Install command succeeded"
           echo "Successfully installed: $pkg"
           return 0
@@ -133,7 +133,7 @@
           if ! wait_for_pacman; then
             echo "ERROR: Cannot update, pacman is locked"
           else
-            sudo /usr/bin/pacman -Syu --noconfirm 2>&1 | tee -a "$LOGDIR/last.log"
+            /usr/bin/sudo /usr/bin/pacman -Syu --noconfirm 2>&1 | tee -a "$LOGDIR/last.log"
           fi
         fi
       fi
@@ -183,7 +183,7 @@
             if [ "$SAFE_MODE" -eq 1 ]; then
               echo "DRY RUN (safe mode). Would remove: $old_pkg" | tee -a "$LOGDIR/last.log"
             else
-              if sudo /usr/bin/pacman -Rns --noconfirm "$old_pkg" 2>&1 | tee -a "$LOGDIR/last.log"; then
+              if /usr/bin/sudo /usr/bin/pacman -Rns --noconfirm "$old_pkg" 2>&1 | tee -a "$LOGDIR/last.log"; then
                 echo "Successfully removed: $old_pkg"
               else
                 echo "Failed to remove: $old_pkg" | tee -a "$LOGDIR/last.log"
