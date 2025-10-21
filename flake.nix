@@ -57,9 +57,12 @@
         local pkg="$1"
         local is_aur="$2"
         
+        echo "[DEBUG] install_package called for: $pkg (AUR: $is_aur)"
+        
         # Check if already installed
         if $PACMAN -Qi "$pkg" >/dev/null 2>&1; then
           echo "✓ $pkg (already installed)"
+          echo "[DEBUG] Returning from install_package (already installed)"
           return 0
         fi
         
@@ -101,6 +104,9 @@
           ((ERRORS++))
         fi
       done
+      
+      echo "[DEBUG] Finished processing regular packages"
+      echo "[DEBUG] About to process AUR packages"
       
       # Process AUR packages
       echo "[DEBUG] AUR packages count: ''${#AUR_PACKAGES[@]}"
