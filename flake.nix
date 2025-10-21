@@ -79,28 +79,8 @@
         
         if [ "$is_aur" = "true" ]; then
           if [ -x "$AURHELPER" ]; then
-            if [ "$INTERACTION_LEVEL" = "full" ]; then
-              # Full interactive: user answers ALL questions
-              echo "⚠️  Full interactive mode: You answer ALL questions for $pkg"
-              install_output=$(export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"; \
-                             "$AURHELPER" -S --needed "$pkg" 2>&1)
-              install_status=$?
-            elif [ "$INTERACTION_LEVEL" = "medium" ]; then
-              # Medium interactive: flags handle common questions, user answers special ones
-              echo "⚠️  Medium interactive mode: Flags handle common questions, you answer special ones for $pkg"
-              install_output=$(export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"; \
-                             "$AURHELPER" -S --noconfirm --needed \
-                             --answerdiff=None --answerclean=None --answeredit=None \
-                             --answerupgrade=None --removemake "$pkg" 2>&1)
-              install_status=$?
-            else
-              # Automatic: use flags to skip prompts + echo "n" for remaining prompts
-              install_output=$(export PATH="/usr/bin:/usr/local/bin:/bin:$PATH"; \
-                             echo "n" | "$AURHELPER" -S --noconfirm --needed \
-                             --answerdiff=None --answerclean=None --answeredit=None \
-                             --answerupgrade=None --removemake "$pkg" 2>&1)
-              install_status=$?
-            fi
+            # Set PATH to include /usr/bin for yay to find sudo
+            PATH="/usr/bin:/usr/local/bin:/bin:$PATH" yes 2>/dev/null | "$AURHELPER" -S --noconfirm --needed "$pkg" || true
           else
             echo "ERROR: AUR helper not found"
             return 1
