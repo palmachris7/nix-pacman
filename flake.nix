@@ -89,20 +89,19 @@
           return 0
         fi
         
-        echo "DEBUG: Package not installed, checking repos with: /usr/bin/pacman -Si $pkg"
-        # Use -Si for exact package search in repos
-        if /usr/bin/pacman -Si "$pkg" >/dev/null 2>&1; then
-          echo "DEBUG: Found in repos, installing..."
-          echo "installing repo package: $pkg"
-          if sudo /usr/bin/pacman -S --noconfirm --needed "$pkg"; then
-            echo "Successfully installed: $pkg"
-            return 0
-          else
-            echo "Failed to install: $pkg"
-            return 1
-          fi
+        echo "DEBUG: Package not installed, trying direct install"
+        # Skip -Si check and try direct install with pacman -S
+        # This is more reliable as -Si may fail in restricted environments
+        echo "DEBUG: Attempting: sudo /usr/bin/pacman -S --noconfirm --needed $pkg"
+        if sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
+          echo "DEBUG: Install command succeeded"
+          echo "Successfully installed: $pkg"
+          return 0
         else
-          echo "DEBUG: /usr/bin/pacman -Si failed with exit code: $?"
+          local exit_code=$?
+          echo "DEBUG: Install failed with exit code: $exit_code"
+          echo "DEBUG: Last log lines:"
+          tail -3 /tmp/pacman-install.log
         fi
         
         echo "DEBUG: Not in repos, trying AUR..."
@@ -121,7 +120,7 @@
           echo "DEBUG: AUR helper not found at $AURHELPER"
         fi
         
-        echo "ERROR: $pkg not found in repos and $AURHELPER not available"
+        echo "ERROR: $pkg not found in repos and $AURHELPER not available" d d
         return 2
       }
       
