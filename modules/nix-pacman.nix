@@ -62,7 +62,7 @@ in
       
       if [ -x "$HOME/.local/bin/nix-pacman-apply" ]; then
         # Run script with package lists as arguments
-        if ${toString cfg.safeMode}; then
+        if [ "${toString cfg.safeMode}" = "true" ]; then
           echo "nix-pacman: SAFE MODE enabled (dry run only)"
           export SAFE_MODE=1
         else
@@ -70,7 +70,7 @@ in
           export SAFE_MODE=0
         fi
         
-        if ${toString cfg.updatePackages}; then
+        if [ "${toString cfg.updatePackages}" = "true" ]; then
           echo "nix-pacman: UPDATE PACKAGES enabled"
           export UPDATE_PACKAGES=1
         else
