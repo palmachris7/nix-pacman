@@ -93,12 +93,18 @@
         # Skip -Si check and try direct install with pacman -S
         # This is more reliable as -Si may fail in restricted environments
         echo "DEBUG: Attempting: /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed $pkg"
-        if yes | /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
+        if yes 2>/dev/null | /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
           echo "DEBUG: Install command succeeded"
           echo "Successfully installed: $pkg"
           return 0
         else
           local exit_code=$?
+          # Exit code 141 is SIGPIPE from yes command, which is OK if package installed
+          if [ $exit_code -eq 141 ] && /usr/bin/pacman -Qi "$pkg" >/dev/null 2>&1; then
+            echo "DEBUG: Package installed successfully (ignoring SIGPIPE)"
+            echo "Successfully installed: $pkg"
+            return 0
+          fi
           echo "DEBUG: Install failed with exit code: $exit_code"
           echo "DEBUG: Last log lines:"
           tail -3 /tmp/pacman-install.log
