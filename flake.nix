@@ -80,23 +80,40 @@
       
       apply_pkg() {
         local pkg="$1"
+        echo "DEBUG: Checking package: $pkg"
+        
         if pacman -Qi "$pkg" >/dev/null 2>&1; then
           echo "skip: $pkg (already installed)"
           return 0
         fi
+        
+        echo "DEBUG: Package not installed, checking repos..."
         # Use -Si for exact package search in repos
         if pacman -Si "$pkg" >/dev/null 2>&1; then
           echo "installing repo package: $pkg"
-          sudo pacman -S --noconfirm --needed "$pkg"
-          return $?
+          if sudo pacman -S --noconfirm --needed "$pkg"; then
+            echo "Successfully installed: $pkg"
+            return 0
+          else
+            echo "Failed to install: $pkg"
+            return 1
+          fi
         fi
-        # fallback to AUR helper
+        
+        echo "DEBUG: Not in repos, trying AUR..."
+        # Try AUR helper
         if command -v "$AURHELPER" >/dev/null 2>&1 || [ -x "$AURHELPER" ]; then
           echo "installing AUR package via $AURHELPER: $pkg"
-          "$AURHELPER" -S --noconfirm --needed "$pkg"
-          return $?
+          if "$AURHELPER" -S --noconfirm --needed "$pkg"; then
+            echo "Successfully installed from AUR: $pkg"
+            return 0
+          else
+            echo "Failed to install from AUR: $pkg"
+            return 1
+          fi
         fi
-        echo "WARN: $pkg not found in repos and $AURHELPER not installed"
+        
+        echo "ERROR: $pkg not found in repos and $AURHELPER not available"
         return 2
       }
       
