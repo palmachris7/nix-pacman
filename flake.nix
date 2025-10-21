@@ -29,21 +29,28 @@
       
       # Validate AUR helper is installed if we have AUR packages
       validate_aur_helper() {
+        echo "DEBUG: Validating AUR helper: $AURHELPER"
+        echo "DEBUG: PATH during validation: $PATH"
+        
         # First try to find it in PATH
         if command -v "$AURHELPER" >/dev/null 2>&1; then
+          echo "DEBUG: Found $AURHELPER in PATH"
           return 0
         fi
         
         # If not in PATH, try common system locations
         for path in "/usr/bin/$AURHELPER" "/usr/local/bin/$AURHELPER" "/bin/$AURHELPER"; do
+          echo "DEBUG: Checking $path"
           if [ -x "$path" ]; then
+            echo "DEBUG: Found AUR helper at $path"
             AURHELPER="$path"
+            export AURHELPER
             return 0
           fi
         done
         
         echo "ERROR: AUR helper '$AURHELPER' is not installed"
-        echo "Please install it first: sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/$AURHELPER.git && cd $AURHELPER && makepkg -si"
+        echo "Please install it first: /usr/bin/sudo /usr/bin/pacman -S --needed git base-devel && git clone https://aur.archlinux.org/$AURHELPER.git && cd $AURHELPER && makepkg -si"
         return 1
       }
       
