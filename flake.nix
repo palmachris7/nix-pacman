@@ -93,7 +93,7 @@
         # Skip -Si check and try direct install with pacman -S
         # This is more reliable as -Si may fail in restricted environments
         echo "DEBUG: Attempting: /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed $pkg"
-        if /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
+        if yes | /usr/bin/sudo /usr/bin/pacman -S --noconfirm --needed "$pkg" 2>&1 | tee /tmp/pacman-install.log; then
           echo "DEBUG: Install command succeeded"
           echo "Successfully installed: $pkg"
           return 0
