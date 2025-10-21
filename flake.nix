@@ -53,9 +53,13 @@
       # Read previous installed packages
       declare -A previous_packages
       if [ -f "$INSTALLED_FILE" ]; then
+        echo "[DEBUG] Reading previous installed packages from $INSTALLED_FILE"
         while IFS= read -r pkg; do
           [ -n "$pkg" ] && previous_packages["$pkg"]=1
         done < "$INSTALLED_FILE"
+        echo "[DEBUG] Previous packages: ''${!previous_packages[@]}"
+      else
+        echo "[DEBUG] No previous installed packages file found at $INSTALLED_FILE"
       fi
       
       # Current desired packages
@@ -66,18 +70,31 @@
       for pkg in "''${AUR_PACKAGES[@]}"; do
         [ -n "$pkg" ] && current_packages+=("$pkg")
       done
+      echo "[DEBUG] Current desired packages: ''${current_packages[@]}"
       
       # Uninstall packages not in current list
+      echo "[DEBUG] Checking for packages to uninstall..."
+      packages_to_remove=()
       for pkg in "''${!previous_packages[@]}"; do
         if [[ ! " ''${current_packages[*]} " =~ " $pkg " ]]; then
-          echo "nix-pacman: Removing $pkg (no longer in config)"
-          if [ "$SAFE_MODE" -eq 0 ]; then
-            "$AURHELPER" -Rns "$pkg" --noconfirm 2>/dev/null || echo "Warning: Could not remove $pkg"
-          else
-            echo "DRY RUN: Would remove $pkg"
-          fi
+          packages_to_remove+=("$pkg")
         fi
       done
+      
+      if [ ''${#packages_to_remove[@]} -gt 0 ]; then
+        echo "[DEBUG] Packages to remove: ''${packages_to_remove[@]}"
+        for pkg in "''${packages_to_remove[@]}"; do
+          echo "nix-pacman: Removing $pkg (no longer in config)"
+          if [ "$SAFE_MODE" -eq 0 ]; then
+            echo "[DEBUG] Executing: $AURHELPER -Rns $pkg --noconfirm"
+            "$AURHELPER" -Rns "$pkg" --noconfirm 2>/dev/null || echo "Warning: Could not remove $pkg"
+          else
+            echo "[DEBUG] SAFE MODE: Would remove $pkg"
+          fi
+        done
+      else
+        echo "[DEBUG] No packages to remove"
+      fi
       
       # Counters
       ERRORS=0
@@ -166,7 +183,9 @@
       fi
       
       # Save current installed packages list
+      echo "[DEBUG] Saving current packages list to $INSTALLED_FILE"
       printf '%s\n' "''${current_packages[@]}" > "$INSTALLED_FILE"
+      echo "[DEBUG] Saved ''${#current_packages[@]} packages to tracking file"
       
       # Summary
       echo ""
